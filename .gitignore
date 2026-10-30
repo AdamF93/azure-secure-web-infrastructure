@@ -1,0 +1,9 @@
+# JSON templates generated from our Bicep source
+/infra/main.json
+/infra/network.json
+
+# Local environment files and private keys
+.env
+.env.*
+*.pem
+*.key
