@@ -1,6 +1,10 @@
 # JSON templates generated from our Bicep source
 /infra/main.json
 /infra/network.json
+/infra/vm.json
+
+/docs/troubleshooting.md
+
 
 # Local environment files and private keys
 .env

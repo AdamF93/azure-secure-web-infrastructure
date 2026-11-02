@@ -1,0 +1,26 @@
+#cloud-config
+package_update: true
+
+packages:
+  - nginx
+
+write_files:
+  - path: /var/www/html/index.html
+    owner: root:root
+    permissions: '0644'
+    content: |
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <title>Azure Secure Web Infrastructure</title>
+      </head>
+      <body>
+        <h1>Azure Secure Web Infrastructure</h1>
+        <p>Deployed with Bicep in Germany West Central.</p>
+        <p>Ubuntu and NGINX configured automatically with cloud-init.</p>
+      </body>
+      </html>
+
+runcmd:
+  - systemctl enable --now nginx
