@@ -1,9 +1,10 @@
 targetScope = 'resourceGroup'
 
 param location string = resourceGroup().location
+param locationCode string = 'gwc'
 
 resource webNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
-  name: 'nsg-web-secure-web-dev-uks'
+  name: 'nsg-web-secure-web-dev-${locationCode}'
   location: location
   tags: {
     Environment: 'Development'
@@ -43,7 +44,7 @@ resource webNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
 }
 
 resource virtualNetwork 'Microsoft.Network/virtualNetworks@2024-05-01' = {
-  name: 'vnet-secure-web-dev-uks'
+  name: 'vnet-secure-web-dev-${locationCode}'
   location: location
   tags: {
     Environment: 'Development'
