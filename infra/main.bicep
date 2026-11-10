@@ -7,6 +7,14 @@ param sshPublicKey string
 @secure()
 @description('Email address for alert notifications.')
 param alertEmail string
+param vmSize string = 'Standard_D2ls_v7'
+param adminUsername string = 'azureadmin'
+
+param alertEnabled bool = false
+
+@minValue(0)
+@maxValue(100)
+param cpuThreshold int = 80
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2025-04-01' = {
   name: 'rg-secure-web-dev-${locationCode}'
@@ -31,6 +39,8 @@ module webVm 'vm.bicep' = {
   name: 'deploy-secure-web-vm-${locationCode}'
   scope: resourceGroup
   params: {
+    vmSize: vmSize
+    adminUsername: adminUsername
     location: location
     locationCode: locationCode
     sshPublicKey: sshPublicKey
@@ -58,8 +68,8 @@ module alerts 'alerts.bicep' = {
   params: {
     locationCode: locationCode
     alertEmail: alertEmail
-    alertEnabled: false
-    cpuThreshold: 80
+    alertEnabled: alertEnabled
+    cpuThreshold: cpuThreshold
   }
   dependsOn: [
     webVm
