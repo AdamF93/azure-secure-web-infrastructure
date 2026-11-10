@@ -3,6 +3,7 @@
 /infra/network.json
 /infra/vm.json
 /infra/monitoring.json
+/infra/alerts.json
 
 /docs/troubleshooting.md
 

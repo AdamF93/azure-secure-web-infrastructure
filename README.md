@@ -42,6 +42,11 @@ do not block communication between workloads.
 - NGINX installation and webpage provisioning through cloud-init.
 - Server checks performed using Azure Run Command.
 - Source code tracked in Git and published to GitHub.
+- System-assigned managed identity for the VM.
+- Azure Monitor Agent deployed through Bicep.
+- Data Collection Rule collecting Linux CPU counters every 60 seconds.
+- Log Analytics workspace with 30-day default retention.
+- CPU metric alert linked to an email Action Group.
 
 ## Verification completed
 
@@ -50,6 +55,11 @@ do not block communication between workloads.
 - NGINX reported an active service state.
 - A local HTTP request returned 200 OK.
 - The webpage loaded through the public IP in a browser.
+- Azure Monitor Agent heartbeat received in Log Analytics.
+- CPU records queried successfully from the Perf table using KQL.
+- Real metric alert triggered using a temporary 0% threshold.
+- Alert email successfully delivered through the Action Group.
+- Alert restored to an 80% threshold and disabled after testing.
 
 ## Repository structure
 
@@ -57,6 +67,9 @@ do not block communication between workloads.
 - `infra/network.bicep` — VNet, subnets and web NSG.
 - `infra/vm.bicep` — public IP, network interface and Ubuntu VM.
 - `infra/cloud-init.yaml` — NGINX installation and webpage configuration.
+- `infra/monitoring.bicep` — Log Analytics workspace, CPU collection rule
+  and association with the VM.
+- `infra/alerts.bicep` — CPU metric alert and email Action Group.
 
 The templates are currently deployed separately. A complete deployment
 entry point and reusable deployment instructions are planned.
@@ -69,9 +82,24 @@ The retained disk and public IP continue to incur charges.
 Paid resources will be removed before the Azure trial expires.
 Bicep source is retained so the environment can be rebuilt.
 
+## Monitoring design
+
+Azure Monitor Agent collects guest CPU measurements every 60 seconds.
+The Data Collection Rule routes these records to the Log Analytics
+Perf table. Heartbeat and CPU data were verified using KQL.
+
+The CPU alert separately uses Azure's platform metric, Percentage CPU.
+It evaluates every minute and triggers when the five-minute average
+exceeds 80%.
+
+Email delivery was verified by temporarily lowering the threshold to 0%.
+After testing, the threshold was restored to 80% and the rule disabled.
+
+The Action Group test-notification API rejected the free-trial
+subscription, but an actual fired alert successfully delivered email.
+
 ## Planned improvements
 
-- Azure Monitor, Log Analytics and alerting.
 - Explicit least-privilege RBAC configuration.
 - Connected Bicep modules and deployment parameters.
 - GitHub Actions deployment using OIDC authentication.
