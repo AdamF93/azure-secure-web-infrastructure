@@ -59,6 +59,9 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2024-03-01' = {
   name: vmName
   location: location
   tags: tags
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     hardwareProfile: {
       vmSize: vmSize
@@ -116,6 +119,19 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2024-03-01' = {
         }
       ]
     }
+  }
+}
+
+resource monitorAgent 'Microsoft.Compute/virtualMachines/extensions@2024-03-01' = {
+  parent: virtualMachine
+  name: 'AzureMonitorLinuxAgent'
+  location: location
+  properties: {
+    publisher: 'Microsoft.Azure.Monitor'
+    type: 'AzureMonitorLinuxAgent'
+    typeHandlerVersion: '1.0'
+    autoUpgradeMinorVersion: true
+    enableAutomaticUpgrade: true
   }
 }
 
