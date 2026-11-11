@@ -1,0 +1,15 @@
+{
+  "Name": "Secure Web Subscription Deployment Operator",
+  "IsCustom": true,
+  "Description": "Submit subscription deployments; workload permissions are assigned separately at resource-group scope.",
+  "Actions": [
+    "Microsoft.Resources/deployments/*",
+    "Microsoft.Resources/subscriptions/read"
+  ],
+  "NotActions": [],
+  "DataActions": [],
+  "NotDataActions": [],
+  "AssignableScopes": [
+    "/subscriptions/637c8b51-7107-451b-9a7b-3e12cc03a9a4"
+  ]
+}
