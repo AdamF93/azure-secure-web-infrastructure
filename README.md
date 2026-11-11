@@ -47,6 +47,13 @@ do not block communication between workloads.
 - Data Collection Rule collecting Linux CPU counters every 60 seconds.
 - Log Analytics workspace with 30-day default retention.
 - CPU metric alert linked to an email Action Group.
+- Modular Bicep deployment through a subscription-scope entry point.
+- Development configuration in `infra/dev.bicepparam`.
+- GitHub Actions compilation, deployment preview and optional deployment.
+- OIDC authentication through a Microsoft Entra application and federated
+  credential, without an Azure client secret.
+- Project-scoped Contributor access plus a custom role for subscription
+  deployment operations.
 
 ## Verification completed
 
@@ -60,19 +67,28 @@ do not block communication between workloads.
 - Real metric alert triggered using a temporary 0% threshold.
 - Alert email successfully delivered through the Action Group.
 - Alert restored to an 80% threshold and disabled after testing.
+- GitHub Actions successfully authenticated to Azure using OIDC.
+- The preview operation completed with deployment correctly skipped.
+- The deployment operation successfully redeployed the existing environment.
 
 ## Repository structure
 
-- `infra/main.bicep` — subscription-scope Resource Group deployment.
+- `infra/main.bicep` — subscription-scope entry point orchestrating all modules.
 - `infra/network.bicep` — VNet, subnets and web NSG.
 - `infra/vm.bicep` — public IP, network interface and Ubuntu VM.
 - `infra/cloud-init.yaml` — NGINX installation and webpage configuration.
 - `infra/monitoring.bicep` — Log Analytics workspace, CPU collection rule
   and association with the VM.
 - `infra/alerts.bicep` — CPU metric alert and email Action Group.
+- `infra/dev.bicepparam` — development deployment settings.
+- `infra/github-federation.json` — GitHub OIDC trust configuration.
+- `infra/github-deployment-role.json` — custom deployment role definition.
+- `.github/workflows/azure-auth-test.yml` — validation, preview and optional
+  deployment workflow.
 
-The templates are currently deployed separately. A complete deployment
-entry point and reusable deployment instructions are planned.
+`infra/main.bicep` creates the Resource Group and orchestrates the network,
+VM, monitoring and alert modules. Dependencies ensure networking finishes
+before the VM, and the VM finishes before monitoring associations and alerts.
 
 ## Cost management
 
@@ -100,8 +116,7 @@ subscription, but an actual fired alert successfully delivered email.
 
 ## Planned improvements
 
-- Explicit least-privilege RBAC configuration.
-- Connected Bicep modules and deployment parameters.
-- GitHub Actions deployment using OIDC authentication.
-- HTTPS configuration.
-- Additional architecture, security and troubleshooting documentation.
+- Verify a complete deployment into an empty environment.
+- Add deployment, security and cleanup instructions.
+- Configure and verify HTTPS.
+- Automate post-deployment health checks.
