@@ -9,6 +9,12 @@ Core infrastructure has been deployed and tested in Germany West Central.
 The Ubuntu VM is currently deallocated to reduce costs, so the website
 is offline. Its OS disk and static public IP remain allocated and billable.
 
+## Documentation
+
+- [Deployment and verification](docs/deployment.md)
+- [Security decisions](docs/security.md)
+- [Pause and cleanup](docs/cleanup.md)
+
 ## Architecture
 
 ```mermaid
