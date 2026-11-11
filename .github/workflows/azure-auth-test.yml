@@ -2,6 +2,15 @@ name: Validate and preview Azure infrastructure
 
 on:
   workflow_dispatch:
+    inputs:
+      operation:
+        description: Preview changes or deploy infrastructure
+        required: true
+        default: preview
+        type: choice
+        options:
+          - preview
+          - deploy
 
 permissions:
   contents: read
@@ -52,3 +61,21 @@ jobs:
             --name "preview-secure-web-${GITHUB_RUN_ID}" \
             --location germanywestcentral \
             --parameters infra/dev.bicepparam
+
+      - name: Deploy infrastructure
+        if: inputs.operation == 'deploy'
+        env:
+          AZURE_SSH_PUBLIC_KEY: ${{ vars.AZURE_SSH_PUBLIC_KEY }}
+          AZURE_ALERT_EMAIL: ${{ secrets.AZURE_ALERT_EMAIL }}
+        run: |
+          set -euo pipefail
+
+          : "${AZURE_SSH_PUBLIC_KEY:?Missing public key variable}"
+          : "${AZURE_ALERT_EMAIL:?Missing alert email secret}"
+
+          az deployment sub create \
+            --name "deploy-secure-web-${GITHUB_RUN_ID}" \
+            --location germanywestcentral \
+            --parameters infra/dev.bicepparam \
+            --query properties.provisioningState \
+            --output tsv
