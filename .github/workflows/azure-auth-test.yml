@@ -1,4 +1,4 @@
-name: Test Azure OIDC authentication
+name: Validate and preview Azure infrastructure
 
 on:
   workflow_dispatch:
@@ -7,16 +7,30 @@ permissions:
   contents: read
 
 jobs:
-  authenticate:
+  preview:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     permissions:
       contents: read
       id-token: write
 
+    defaults:
+      run:
+        shell: bash
+
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Compile Bicep
+        run: |
+          set -euo pipefail
+          az bicep build --file infra/main.bicep
+
       - name: Sign in to Azure using OIDC
         uses: azure/login@v3
         with:
@@ -24,11 +38,17 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Verify project Resource Group access
-        shell: bash
+      - name: Preview infrastructure changes
+        env:
+          AZURE_SSH_PUBLIC_KEY: ${{ vars.AZURE_SSH_PUBLIC_KEY }}
+          AZURE_ALERT_EMAIL: ${{ secrets.AZURE_ALERT_EMAIL }}
         run: |
           set -euo pipefail
-          az group show \
-            --name rg-secure-web-dev-gwc \
-            --query "{Name:name, Location:location, State:properties.provisioningState}" \
-            --output table
+
+          : "${AZURE_SSH_PUBLIC_KEY:?Missing public key variable}"
+          : "${AZURE_ALERT_EMAIL:?Missing alert email secret}"
+
+          az deployment sub what-if \
+            --name "preview-secure-web-${GITHUB_RUN_ID}" \
+            --location germanywestcentral \
+            --parameters infra/dev.bicepparam
