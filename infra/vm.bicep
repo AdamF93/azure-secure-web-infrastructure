@@ -87,7 +87,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2024-03-01' = {
     osProfile: {
       computerName: 'web01'
       adminUsername: adminUsername
-      customData: base64(loadTextContent('cloud-init.yaml'))
+      customData: base64(replace(replace(loadTextContent('cloud-init.yaml'), '\r\n', '\n'), '\n', '\r\n'))
       linuxConfiguration: {
         disablePasswordAuthentication: true
         provisionVMAgent: true
