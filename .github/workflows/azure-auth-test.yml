@@ -88,14 +88,14 @@ jobs:
           resource_group="rg-secure-web-dev-gwc"
           vm_name="vm-web-secure-web-dev-gwc-01"
 
-          public_ip=$(az network public-ip show \
+          public_hostname=$(az network public-ip show \
             --resource-group "$resource_group" \
             --name pip-web-secure-web-dev-gwc-01 \
-            --query ipAddress \
+            --query dnsSettings.fqdn \
             --output tsv)
 
           if [[ -z "$public_ip" ]]; then
-            echo "Public IP address was not returned."
+            echo "Public hostname was not returned."
             exit 1
           fi
 
@@ -111,7 +111,7 @@ jobs:
               --max-time 10 \
               --output "$page_file" \
               --write-out '%{http_code}' \
-              "http://$public_ip/"); then
+              "https://$public_hostname/"); then
               if [[ "$http_status" == "200" ]] &&
                 grep -q 'Azure Secure Web Infrastructure' "$page_file"; then
                 healthy=true
@@ -139,4 +139,4 @@ jobs:
             exit 1
           fi
 
-          echo "Verified HTTP 200, expected page content and extension provisioning."
+          echo "Verified HTTPS 200, expected page content and extension provisioning."
