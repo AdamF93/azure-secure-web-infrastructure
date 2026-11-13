@@ -79,7 +79,7 @@ jobs:
             --parameters infra/dev.bicepparam \
             --query properties.provisioningState \
             --output tsv
-            - name: Verify deployed web service and monitoring extension
+    
       - name: Verify deployed web service and monitoring extension
         if: inputs.operation == 'deploy'
         run: |
