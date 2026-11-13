@@ -79,3 +79,64 @@ jobs:
             --parameters infra/dev.bicepparam \
             --query properties.provisioningState \
             --output tsv
+            - name: Verify deployed web service and monitoring extension
+      - name: Verify deployed web service and monitoring extension
+        if: inputs.operation == 'deploy'
+        run: |
+          set -euo pipefail
+
+          resource_group="rg-secure-web-dev-gwc"
+          vm_name="vm-web-secure-web-dev-gwc-01"
+
+          public_ip=$(az network public-ip show \
+            --resource-group "$resource_group" \
+            --name pip-web-secure-web-dev-gwc-01 \
+            --query ipAddress \
+            --output tsv)
+
+          if [[ -z "$public_ip" ]]; then
+            echo "Public IP address was not returned."
+            exit 1
+          fi
+
+          page_file=$(mktemp)
+          trap 'rm -f "$page_file"' EXIT
+
+          healthy=false
+          for attempt in {1..12}; do
+            echo "Checking HTTP, attempt $attempt of 12"
+
+            if http_status=$(curl --silent --show-error \
+              --connect-timeout 5 \
+              --max-time 10 \
+              --output "$page_file" \
+              --write-out '%{http_code}' \
+              "http://$public_ip/"); then
+              if [[ "$http_status" == "200" ]] &&
+                grep -q 'Azure Secure Web Infrastructure' "$page_file"; then
+                healthy=true
+                break
+              fi
+            fi
+
+            sleep 10
+          done
+
+          if [[ "$healthy" != "true" ]]; then
+            echo "Website verification failed."
+            exit 1
+          fi
+
+          agent_state=$(az vm extension show \
+            --resource-group "$resource_group" \
+            --vm-name "$vm_name" \
+            --name AzureMonitorLinuxAgent \
+            --query provisioningState \
+            --output tsv)
+
+          if [[ "$agent_state" != "Succeeded" ]]; then
+            echo "Monitoring extension state: $agent_state"
+            exit 1
+          fi
+
+          echo "Verified HTTP 200, expected page content and extension provisioning."
