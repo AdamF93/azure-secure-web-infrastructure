@@ -30,6 +30,9 @@ resource publicIp 'Microsoft.Network/publicIPAddresses@2024-05-01' = {
   properties: {
     publicIPAllocationMethod: 'Static'
     publicIPAddressVersion: 'IPv4'
+    dnsSettings: {
+      domainNameLabel: 'secure-web-${uniqueString(resourceGroup().id)}'
+    }
   }
 }
 
@@ -137,3 +140,4 @@ resource monitorAgent 'Microsoft.Compute/virtualMachines/extensions@2024-03-01' 
 
 output vmName string = virtualMachine.name
 output publicIpAddress string = publicIp.properties.ipAddress
+output publicHostname string = publicIp.properties.dnsSettings.fqdn
