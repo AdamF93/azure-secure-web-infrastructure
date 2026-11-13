@@ -76,6 +76,8 @@ do not block communication between workloads.
 - GitHub Actions successfully authenticated to Azure using OIDC.
 - The preview operation completed with deployment correctly skipped.
 - The deployment operation successfully redeployed the existing environment.
+- GitHub Actions verified HTTP 200, expected webpage content and
+  monitoring extension provisioning after deployment.
 
 ## Repository structure
 
@@ -125,4 +127,3 @@ subscription, but an actual fired alert successfully delivered email.
 - Verify a complete deployment into an empty environment.
 - Add deployment, security and cleanup instructions.
 - Configure and verify HTTPS.
-- Automate post-deployment health checks.
