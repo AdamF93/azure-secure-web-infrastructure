@@ -94,7 +94,7 @@ jobs:
             --query dnsSettings.fqdn \
             --output tsv)
 
-          if [[ -z "$public_ip" ]]; then
+          if [[ -z "$public_hostname" ]]; then
             echo "Public hostname was not returned."
             exit 1
           fi
@@ -139,4 +139,4 @@ jobs:
             exit 1
           fi
 
-          echo "Verified HTTPS 200, expected page content and extension provisioning."
+          echo "Checking HTTPS, attempt $attempt of 12"
