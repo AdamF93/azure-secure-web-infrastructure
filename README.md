@@ -32,11 +32,16 @@ flowchart TD
     NSG["Web NSG: allows internet TCP 80 and 443"] -. "Associated with" .-> Web
 ```
 
-Public HTTP access was tested successfully. HTTPS certificates and
-NGINX TLS configuration have not yet been implemented.
+Public HTTP access was tested successfully. HTTPS is configured using a
+Let's Encrypt certificate on the Azure-provided hostname. HTTP now
+redirects to HTTPS.
 
-The management subnet is reserved for future use. Separate subnets alone
-do not block communication between workloads.
+Certificate renewal passed a dry run, and GitHub Actions verified HTTPS
+access and expected page content.
+
+HTTPS configuration is applied separately through `scripts/enable-https.sh`;
+the deployment workflow does not yet run this script automatically.
+Renewal requires the VM to be running and publicly reachable.
 
 ## Implemented
 
