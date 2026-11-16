@@ -79,6 +79,39 @@ jobs:
             --parameters infra/dev.bicepparam \
             --query properties.provisioningState \
             --output tsv
+
+      - name: Configure HTTPS
+        if: inputs.operation == 'deploy'
+        env:
+          CERTIFICATE_EMAIL: ${{ secrets.AZURE_ALERT_EMAIL }}
+        run: |
+          set -euo pipefail
+
+          : "${CERTIFICATE_EMAIL:?Missing certificate email}"
+
+          public_hostname=$(az network public-ip show \
+            --resource-group rg-secure-web-dev-gwc \
+            --name pip-web-secure-web-dev-gwc-01 \
+            --query dnsSettings.fqdn \
+            --output tsv)
+
+          : "${public_hostname:?Missing public hostname}"
+
+          result=$(az vm run-command invoke \
+            --resource-group rg-secure-web-dev-gwc \
+            --name vm-web-secure-web-dev-gwc-01 \
+            --command-id RunShellScript \
+            --scripts "@scripts/enable-https.sh" \
+            --parameters "$public_hostname" "$CERTIFICATE_EMAIL" \
+            --query "value[0].message" \
+            --output tsv)
+
+          printf '%s\n' "$result"
+
+          if ! grep -Fxq "HTTPS_SETUP_OK" <<< "$result"; then
+            echo "HTTPS setup did not report successful completion."
+            exit 1
+          fi
     
       - name: Verify deployed web service and monitoring extension
         if: inputs.operation == 'deploy'
