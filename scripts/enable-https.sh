@@ -25,7 +25,7 @@ certbot --nginx \
   --agree-tos \
   --email "$email" \
   --domain "$hostname" \
-  --no-redirect \
+  --redirect \
   --keep-until-expiring
 
 nginx -t
