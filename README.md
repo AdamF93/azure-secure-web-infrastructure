@@ -32,16 +32,19 @@ flowchart TD
     NSG["Web NSG: allows internet TCP 80 and 443"] -. "Associated with" .-> Web
 ```
 
-Public HTTP access was tested successfully. HTTPS is configured using a
-Let's Encrypt certificate on the Azure-provided hostname. HTTP now
-redirects to HTTPS.
+HTTPS is configured using a Let's Encrypt certificate on the Azure-provided
+hostname. HTTP redirects to HTTPS, and certificate renewal passed a dry run.
 
-Certificate renewal passed a dry run, and GitHub Actions verified HTTPS
-access and expected page content.
+GitHub Actions runs `scripts/enable-https.sh` after infrastructure deployment
+and before health checks. The script installs missing certificate tooling
+and configures HTTPS with HTTP-to-HTTPS redirection.
 
-HTTPS configuration is applied separately through `scripts/enable-https.sh`;
-the deployment workflow does not yet run this script automatically.
-Renewal requires the VM to be running and publicly reachable.
+The workflow successfully redeployed the existing environment and verified
+HTTPS certificate trust, HTTP 200, expected page content and monitoring
+extension provisioning.
+
+Automatic certificate renewal requires the VM to be running and publicly
+reachable. A complete rebuild into an empty environment remains untested.
 
 ## Implemented
 
