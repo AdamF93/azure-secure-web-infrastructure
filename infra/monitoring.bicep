@@ -19,6 +19,19 @@ resource workspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   }
 }
 
+resource perfTable 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = {
+  parent: workspace
+  name: 'Perf'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 30
+    totalRetentionInDays: 30
+    schema: {
+      name: 'Perf'
+    }
+  }
+}
+
 resource collectionRule 'Microsoft.Insights/dataCollectionRules@2023-03-11' = {
   name: 'dcr-web-secure-web-dev-${locationCode}'
   location: location
@@ -62,6 +75,9 @@ resource collectionRule 'Microsoft.Insights/dataCollectionRules@2023-03-11' = {
       }
     ]
   }
+  dependsOn: [
+    perfTable
+  ]
 }
 
 resource monitoredVm 'Microsoft.Compute/virtualMachines@2024-03-01' existing = {
