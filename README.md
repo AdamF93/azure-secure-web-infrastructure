@@ -44,7 +44,16 @@ HTTPS certificate trust, HTTP 200, expected page content and monitoring
 extension provisioning.
 
 Automatic certificate renewal requires the VM to be running and publicly
-reachable. A complete rebuild into an empty environment remains untested.
+reachable.
+
+Workload resources were deleted and rebuilt through GitHub Actions.
+Deployment, HTTPS configuration, automated health checks and fresh VM
+heartbeat and CPU telemetry were verified.
+
+The Resource Group, deployment identity and RBAC assignments were retained.
+Log Analytics was soft-deleted and may have recovered historical data.
+The rebuild exposed a Perf-table readiness dependency, which was addressed
+by explicitly declaring the table and making the DCR depend on it.
 
 ## Implemented
 
