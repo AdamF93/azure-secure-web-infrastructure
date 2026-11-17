@@ -139,8 +139,9 @@ After testing, the threshold was restored to 80% and the rule disabled.
 The Action Group test-notification API rejected the free-trial
 subscription, but an actual fired alert successfully delivered email.
 
-## Planned improvements
+## Future improvements
 
-- Verify a complete deployment into an empty environment.
-- Add deployment, security and cleanup instructions.
-- Configure and verify HTTPS.
+- Add automated CI validation for pull requests.
+- Add deployment approvals and branch protection.
+- Configure scheduled OS patching.
+- Test bootstrap deployment into a new Resource Group.
