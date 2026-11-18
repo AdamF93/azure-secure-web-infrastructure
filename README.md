@@ -1,13 +1,14 @@
 # Azure Secure Web Infrastructure
 
-An Azure portfolio project demonstrating networking, Linux administration
-and Infrastructure as Code with Bicep.
+A hands-on Azure portfolio project that deploys an Ubuntu and NGINX web server
+using Bicep and GitHub Actions. It covers virtual networking, HTTPS, monitoring,
+email alerts, and deployment using OpenID Connect (OIDC).
 
 ## Current status
 
-Core infrastructure has been deployed and tested in Germany West Central.
-The Ubuntu VM is currently deallocated to reduce costs, so the website
-is offline. Its OS disk and static public IP remain allocated and billable.
+The infrastructure was deployed and verified in Germany West Central. The VM
+is deallocated between lab sessions, so the website may be offline. The
+deployment history and verification evidence show what was tested.
 
 ## Documentation
 
@@ -19,129 +20,126 @@ is offline. Its OS disk and static public IP remain allocated and billable.
 
 ```mermaid
 flowchart TD
-    Internet["Internet"] --> PublicIP["Standard public IPv4"]
-    PublicIP --> WebNIC["Web VM network interface"]
+    Internet["Internet"] --> PublicIP["Standard public IPv4 and Azure DNS hostname"]
 
-    subgraph VNet["VNet: 10.10.0.0/16"]
-        subgraph Web["snet-web: 10.10.1.0/24"]
-            WebNIC --> VM["Ubuntu VM / NGINX"]
+    subgraph VNet["Azure VNet · 10.10.0.0/16"]
+        subgraph Web["Web subnet · 10.10.1.0/24"]
+            NIC["Web VM network interface"] --> VM["Ubuntu Server 24.04 LTS / NGINX"]
         end
-        Management["snet-management: 10.10.2.0/24 — empty"]
+        Management["Management subnet · 10.10.2.0/24 · reserved"]
     end
 
-    NSG["Web NSG: allows internet TCP 80 and 443"] -. "Associated with" .-> Web
+    PublicIP --> NIC
+    NSG["Web NSG · allows inbound TCP 80 and 443 from the internet"] -.-> Web
 ```
 
-HTTPS is configured using a Let's Encrypt certificate on the Azure-provided
-hostname. HTTP redirects to HTTPS, and certificate renewal passed a dry run.
+The web subnet uses a Network Security Group (NSG) with no custom rule
+allowing SSH from the internet. The VM uses SSH key authentication and
+Trusted Launch with Secure Boot and a virtual TPM. Administrative checks
+were performed through Azure Run Command.
 
-GitHub Actions runs `scripts/enable-https.sh` after infrastructure deployment
-and before health checks. The script installs missing certificate tooling
-and configures HTTPS with HTTP-to-HTTPS redirection.
+The management subnet is reserved for future use. Separate subnets by
+themselves do not block traffic between workloads.
 
-The workflow successfully redeployed the existing environment and verified
-HTTPS certificate trust, HTTP 200, expected page content and monitoring
-extension provisioning.
+## Deployment
 
-Automatic certificate renewal requires the VM to be running and publicly
-reachable.
+`infra/main.bicep` creates the Resource Group and calls the network, VM,
+monitoring, and alert modules. The network deploys before the VM, and the
+VM deploys before its monitoring association and alert. Cloud-init
+installs NGINX and writes the demo page on first boot.
 
-Workload resources were deleted and rebuilt through GitHub Actions.
-Deployment, HTTPS configuration, automated health checks and fresh VM
-heartbeat and CPU telemetry were verified.
+The manually triggered GitHub Actions workflow compiles Bicep, signs in to
+Azure through OIDC, and runs `what-if`. The default `preview` operation
+stops there. Selecting `deploy` also applies the infrastructure, configures
+HTTPS, and runs health checks.
 
-The Resource Group, deployment identity and RBAC assignments were retained.
-Log Analytics was soft-deleted and may have recovered historical data.
-The rebuild exposed a Perf-table readiness dependency, which was addressed
-by explicitly declaring the table and making the DCR depend on it.
+The GitHub deployment identity has Contributor access on the project
+Resource Group and a custom role for subscription deployment operations.
+OIDC uses a federated credential in Microsoft Entra ID, so GitHub needs
+no Azure client secret.
 
-## Implemented
+## HTTPS
 
-- Resource Group, VNet, subnets and NSG deployed using Bicep.
-- NSG associated with the web subnet.
-- Ubuntu Server 24.04 LTS VM with SSH-key authentication.
-- No custom rule allowing SSH from the internet.
-- Trusted Launch with Secure Boot and virtual TPM enabled.
-- NGINX installation and webpage provisioning through cloud-init.
-- Server checks performed using Azure Run Command.
-- Source code tracked in Git and published to GitHub.
-- System-assigned managed identity for the VM.
-- Azure Monitor Agent deployed through Bicep.
-- Data Collection Rule collecting Linux CPU counters every 60 seconds.
-- Log Analytics workspace with 30-day default retention.
-- CPU metric alert linked to an email Action Group.
-- Modular Bicep deployment through a subscription-scope entry point.
-- Development configuration in `infra/dev.bicepparam`.
-- GitHub Actions compilation, deployment preview and optional deployment.
-- OIDC authentication through a Microsoft Entra application and federated
-  credential, without an Azure client secret.
-- Project-scoped Contributor access plus a custom role for subscription
-  deployment operations.
+NGINX serves the site using a Let's Encrypt certificate for the Azure-provided
+hostname. HTTP redirects to HTTPS. The workflow runs `scripts/enable-https.sh`
+after deployment to install certificate tooling if needed and configure NGINX.
 
-## Verification completed
+GitHub Actions verified certificate trust, HTTP status `200` over HTTPS,
+the expected page content, and successful Azure Monitor Agent extension
+provisioning. A separate check verified the HTTP `301` redirect. Certificate
+renewal passed a dry run. Automatic renewal requires the VM to be running
+and reachable.
 
-- Azure reported successful infrastructure provisioning.
-- Cloud-init completed with no reported errors.
-- NGINX reported an active service state.
-- A local HTTP request returned 200 OK.
-- The webpage loaded through the public IP in a browser.
-- Azure Monitor Agent heartbeat received in Log Analytics.
-- CPU records queried successfully from the Perf table using KQL.
-- Real metric alert triggered using a temporary 0% threshold.
-- Alert email successfully delivered through the Action Group.
-- Alert restored to an 80% threshold and disabled after testing.
-- GitHub Actions successfully authenticated to Azure using OIDC.
-- The preview operation completed with deployment correctly skipped.
-- The deployment operation successfully redeployed the existing environment.
-- GitHub Actions verified HTTP 200, expected webpage content and
-  monitoring extension provisioning after deployment.
+## Monitoring and alerting
+
+Azure Monitor Agent collects Linux CPU counters every 60 seconds. A Data
+Collection Rule sends them to the `Perf` table in Log Analytics. Heartbeat
+and CPU records were verified using Kusto Query Language (KQL). The workspace
+uses a 30-day default retention period.
+
+The CPU alert uses Azure's separate platform metric, `Percentage CPU`.
+It evaluates every minute and fires when the five-minute average exceeds
+80%. An email Action Group delivers notifications.
+
+The free-trial subscription blocked the Action Group's sample notification
+operation. A real alert triggered at a temporary 0% threshold successfully
+delivered a `Sev2 Fired` email. The threshold was restored to 80% and the
+rule was disabled after testing.
+
+## Rebuild verification
+
+Workload resources were deleted while the Resource Group, deployment
+identity, and RBAC assignments were retained. The first rebuild attempt
+created infrastructure but failed when Azure rejected the CPU collection
+rule because its destination `Perf` table was unavailable.
+
+The monitoring template now declares `Perf` explicitly and makes the rule
+depend on it. A subsequent workflow run completed the rebuild and passed
+HTTPS configuration and health checks. Fresh heartbeat records matched the
+rebuilt VM's UUID, and a subsequent query returned nine recent CPU samples.
+
+The Log Analytics workspace was soft-deleted, so historical data may have
+been recovered. Bootstrapping into a new Resource Group remains untested.
+
+## Evidence
+
+- [Successful rebuild deployment and health checks](https://github.com/AdamF93/azure-secure-web-infrastructure/actions/runs/44131501282)
+
+<!-- Uncomment these links after committing screenshots with matching filenames.
+
+![GitHub Actions deployment, HTTPS setup, and health checks passed](docs/images/github-deployment-success.png)
+
+![CPU measurements returned by a Log Analytics query](docs/images/cpu-monitoring.png)
+
+[View all screenshots](docs/images/)
+-->
 
 ## Repository structure
 
-- `infra/main.bicep` — subscription-scope entry point orchestrating all modules.
-- `infra/network.bicep` — VNet, subnets and web NSG.
-- `infra/vm.bicep` — public IP, network interface and Ubuntu VM.
-- `infra/cloud-init.yaml` — NGINX installation and webpage configuration.
-- `infra/monitoring.bicep` — Log Analytics workspace, CPU collection rule
-  and association with the VM.
-- `infra/alerts.bicep` — CPU metric alert and email Action Group.
-- `infra/dev.bicepparam` — development deployment settings.
-- `infra/github-federation.json` — GitHub OIDC trust configuration.
-- `infra/github-deployment-role.json` — custom deployment role definition.
-- `.github/workflows/azure-auth-test.yml` — validation, preview and optional
-  deployment workflow.
-
-`infra/main.bicep` creates the Resource Group and orchestrates the network,
-VM, monitoring and alert modules. Dependencies ensure networking finishes
-before the VM, and the VM finishes before monitoring associations and alerts.
+| Path | Purpose |
+| --- | --- |
+| `infra/main.bicep` | Subscription entry point for the Resource Group and workload modules |
+| `infra/dev.bicepparam` | Development deployment settings |
+| `infra/network.bicep` | Virtual network, subnets, and web NSG |
+| `infra/vm.bicep` | Public IP, DNS hostname, network interface, Ubuntu VM, and monitoring agent |
+| `infra/cloud-init.yaml` | First-boot NGINX installation and demo page |
+| `infra/monitoring.bicep` | Log Analytics workspace, `Perf` table, collection rule, and VM association |
+| `infra/alerts.bicep` | CPU metric alert and email Action Group |
+| `infra/github-federation.json` | GitHub OIDC trust configuration |
+| `infra/github-deployment-role.json` | Custom Azure deployment role definition |
+| `.github/workflows/azure-auth-test.yml` | Compilation, preview, deployment, HTTPS setup, and health checks |
+| `scripts/enable-https.sh` | Certbot installation and NGINX HTTPS configuration |
+| `docs/` | Deployment, security, and cleanup guides |
 
 ## Cost management
 
-The VM is deallocated between lab sessions to stop compute charges.
-The retained disk and public IP continue to incur charges.
-
-Paid resources will be removed before the Azure trial expires.
-Bicep source is retained so the environment can be rebuilt.
-
-## Monitoring design
-
-Azure Monitor Agent collects guest CPU measurements every 60 seconds.
-The Data Collection Rule routes these records to the Log Analytics
-Perf table. Heartbeat and CPU data were verified using KQL.
-
-The CPU alert separately uses Azure's platform metric, Percentage CPU.
-It evaluates every minute and triggers when the five-minute average
-exceeds 80%.
-
-Email delivery was verified by temporarily lowering the threshold to 0%.
-After testing, the threshold was restored to 80% and the rule disabled.
-
-The Action Group test-notification API rejected the free-trial
-subscription, but an actual fired alert successfully delivered email.
+The VM is deallocated between sessions to stop compute charges. Its retained
+OS disk and static public IP can still incur charges. The cleanup guide
+covers how to remove the lab resources before the Azure trial expires.
 
 ## Future improvements
 
-- Add automated CI validation for pull requests.
-- Add deployment approvals and branch protection.
+- Add Bicep validation for pull requests.
+- Add branch protection and deployment approvals.
 - Configure scheduled OS patching.
 - Test bootstrap deployment into a new Resource Group.
