@@ -129,6 +129,7 @@ been recovered. Bootstrapping into a new Resource Group remains untested.
 | `infra/github-deployment-role.json` | Custom Azure deployment role definition |
 | `.github/workflows/azure-auth-test.yml` | Compilation, preview, deployment, HTTPS setup, and health checks |
 | `scripts/enable-https.sh` | Certbot installation and NGINX HTTPS configuration |
+| `scripts/cleanup-dev.ps1` | Previews cleanup by default and deletes approved lab resources only after explicit confirmation, keeping the Resource Group and its RBAC assignments intact |
 | `docs/` | Deployment, security, and cleanup guides |
 
 ## Cost management
